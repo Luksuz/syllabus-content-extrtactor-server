@@ -41,4 +41,4 @@ class StructuredChapterList(BaseModel):
 
 class StructureVisualExtractionInput(BaseModel):
     base_64_img: str
-    model: str = "gpt-4o-mini"
+    model: str

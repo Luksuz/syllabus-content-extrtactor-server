@@ -3,3 +3,6 @@ fastapi
 uvicorn
 aiofiles
 uvicorn
+pdf2image
+python-dotenv
+python-multipart
