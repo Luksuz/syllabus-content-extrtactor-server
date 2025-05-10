@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.extract_sections import router as extract_sections_router
+from example_output import example_output
 
 app = FastAPI()
 
@@ -17,6 +18,7 @@ app.include_router(extract_sections_router)
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
 
 if __name__ == "__main__":
     import uvicorn

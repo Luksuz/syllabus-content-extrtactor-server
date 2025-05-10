@@ -4,7 +4,9 @@ import tempfile
 import asyncio
 from pdf_to_img import convert_pdf_to_images
 from chains import extract_vision_data, encode_image
-from models import StructureVisualExtractionInput
+from models import StructureVisualExtractionInput, Sections
+from typing import List
+from example_output import example_output
 
 router = APIRouter(prefix="/api")
 
@@ -14,7 +16,20 @@ async def process_image(image_path, model):
     result = await extract_vision_data(input)
     return result.model_dump()
 
-@router.post("/extract-sections/")
+@router.post(
+        "/extract-sections/",
+        response_model=List[Sections],
+        responses={
+        200: {
+            "description": "Successful Response",
+            "content": {
+                "application/json": {
+                    "example": example_output
+                }
+            },
+        }
+    },
+)
 async def extract_sections(pdf: UploadFile = File(...), model: str = Form("gpt-4.1-mini")):
     try:
         print("Extracting sections from PDF")
