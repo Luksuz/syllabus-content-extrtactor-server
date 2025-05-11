@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Union
+from typing import Literal, Union, Optional
 
 class Option(BaseModel):
     text: str
-    correct: bool
+    is_correct: bool
 
 class MultipleChoiceQuestion(BaseModel):
     question_type: Literal["multiple_choice"] 
@@ -42,3 +42,44 @@ class StructuredChapterList(BaseModel):
 class StructureVisualExtractionInput(BaseModel):
     base_64_img: str
     model: str
+
+# --- Models from google-docai.ipynb --- #
+
+class ExtractTocInput(BaseModel):
+    text: str
+    model: str = "gpt-4o-mini"
+
+class ToCItem(BaseModel):
+    title: str
+    description: str = Field(description="A short description of what the topic covers")
+
+class ExtractToCOutput(BaseModel):
+    items: list[ToCItem] = Field(description="List of titles found in the table of contents")
+    description: str = Field(description="A description of what the syllabus covers")
+    audience_level: str = Field(description="The knowledge level or audience this syllabus is intended for")
+
+class FillInBlankPair(BaseModel):
+    blank_text: str
+    blank_text_answer: str
+
+class Question(BaseModel):
+    question_type: Literal["multiple_choice", "fill_in_blank", "open_ended"]
+    prompt: str
+    options: Optional[list[Option]] = Field(default_factory=list)
+    fill_in_blank_pairs: Optional[list[FillInBlankPair]] = Field(default_factory=list)
+    open_ended_answer: Optional[str]
+
+class GenerateQuestionsInput(BaseModel):
+    toc_item_title: str
+    toc_item_description: str
+    toc_item_audience_level: str
+    model: str = "gpt-4o-mini"
+
+class GenerateQuestionsOutput(BaseModel):
+    toc_item_title: str
+    questions: list[Question]
+# --- End of models from google-docai.ipynb --- #
+
+class DocumentAnalysisWithQuestionsOutput(BaseModel):
+    table_of_contents: ExtractToCOutput
+    topic_questions: list[GenerateQuestionsOutput]

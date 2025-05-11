@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.extract_sections import router as extract_sections_router
+from routes.doc_processing import router as doc_processing_router
 from example_output import example_output
 
 app = FastAPI()
@@ -14,6 +15,7 @@ app.add_middleware(
 )
 
 app.include_router(extract_sections_router)
+app.include_router(doc_processing_router)
 
 @app.get("/")
 async def root():

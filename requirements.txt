@@ -6,3 +6,4 @@ uvicorn
 pdf2image
 python-dotenv
 python-multipart
+google-cloud-documentai

@@ -1,9 +1,14 @@
 import base64
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
-from models import StructureVisualExtractionInput, Sections
+from models import StructureVisualExtractionInput, Sections, ExtractTocInput, ExtractToCOutput, GenerateQuestionsInput, GenerateQuestionsOutput
 from dotenv import load_dotenv
 import aiofiles
+from typing import Union, Optional
+from google.api_core.client_options import ClientOptions
+from google.cloud import documentai
+from google.cloud.documentai_v1.services.document_processor_service import DocumentProcessorServiceAsyncClient
+from langchain_core.prompts import ChatPromptTemplate
 
 load_dotenv()
 
@@ -54,3 +59,155 @@ async def extract_vision_data(input: StructureVisualExtractionInput):
     )
     response = await llm.ainvoke([message])
     return response
+
+# --- Logic from google-docai.ipynb --- #
+
+async def process_document_from_bytes(
+    project_id: str,
+    location: str,
+    processor_id: str,
+    file_content: bytes,
+    mime_type: str,
+    field_mask: Optional[str] = "text,entities,pages.pageNumber",
+    processor_version_id: Optional[str] = "pretrained-ocr-v2.0-2023-06-02",
+) -> str:
+    """Processes a document using Google Document AI from byte content asynchronously."""
+    opts = ClientOptions(api_endpoint=f"{location}-documentai.googleapis.com", credentials_file="config.json")
+
+    async with DocumentProcessorServiceAsyncClient(client_options=opts) as client:
+        if processor_version_id:
+            name = client.processor_version_path(
+                project_id, location, processor_id, processor_version_id
+            )
+        else:
+            name = client.processor_path(project_id, location, processor_id)
+
+        raw_document = documentai.RawDocument(content=file_content, mime_type=mime_type)
+
+        process_options = documentai.ProcessOptions(
+            individual_page_selector=documentai.ProcessOptions.IndividualPageSelector(
+                pages=[_ for _ in range(1, 16)]
+            )
+        )
+
+        request = documentai.ProcessRequest(
+            name=name,
+            raw_document=raw_document,
+            field_mask=field_mask,
+            process_options=process_options,
+        )
+
+        result = await client.process_document(request=request)
+        document = result.document
+    return document.text
+
+
+async def extract_table_of_contents(inputs: Union[ExtractTocInput, dict]):
+    if isinstance(inputs, dict):
+        inputs = ExtractTocInput(**inputs)
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """You are an expert syllabus analyzer. Your task is to identify and extract the table of contents 
+                from the provided syllabus text, as well as determine the knowledge level or audience this syllabus is intended for.
+                
+                Look for patterns that indicate a table of contents such as:
+                - Numbered or bulleted lists of topics
+                - Page numbers following topic titles
+                - Hierarchical organization of topics
+                - Section titles with corresponding page numbers
+                
+                Also analyze the content to determine the intended audience level (e.g., beginner, intermediate, advanced, 
+                undergraduate, graduate, professional, etc.) based on:
+                - Explicit statements about the intended audience
+                - Complexity of topics covered
+                - Terminology used
+                - Prerequisites mentioned
+                - Overall difficulty level of the material
+                
+                Return a list of items found in the table of contents as a list of {{title: str, description: str}} and the audience level as a string.
+                Do not include page numbers or other formatting elements in the titles.
+                """
+            ),
+            (
+                "human",
+                "Document text:\\n{text}",
+            ),
+        ]
+    )
+
+    llm = ChatOpenAI(
+        model=inputs.model,
+        temperature=0,
+    ).with_structured_output(ExtractToCOutput)
+
+    chain = (
+        {
+            "text": lambda x: x["text"],
+        }
+        | prompt
+        | llm
+    )
+
+    result = await chain.ainvoke({"text": inputs.text})
+    return result
+
+
+async def generate_questions(inputs: Union[GenerateQuestionsInput, dict]):
+    if isinstance(inputs, dict):
+        inputs = GenerateQuestionsInput(**inputs)
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """You are an expert educational content creator. Your task is to generate practice questions based on a topic from a syllabus.
+                
+                Create a diverse set of questions covering the provided topic, including:
+                1. Multiple Choice questions (`multiple_choice`):
+                   - Create a prompt and 4-5 options
+                   - Mark exactly one option as correct
+                
+                2. Fill in the Blank questions (`fill_in_blank`):
+                   - Create sentences with blanks to be filled
+                   - Provide the correct answer for each blank
+                
+                3. Open Ended questions (`open_ended`):
+                   - Create thought-provoking questions that require explanatory answers
+                
+                Ensure the questions are appropriate for the specified audience level and cover the topic thoroughly.
+                Generate at least 2 questions of each type (6+ questions total).
+                """
+            ),
+            (
+                "human",
+                "Topic Title: {toc_item_title}\\nTopic Description: {toc_item_description}\\nAudience Level: {toc_item_audience_level}"
+            ),
+        ]
+    )
+
+    llm = ChatOpenAI(
+        model=inputs.model,
+        temperature=0.2,
+    ).with_structured_output(GenerateQuestionsOutput)
+
+    chain = (
+        {
+            "toc_item_title": lambda x: x["toc_item_title"],
+            "toc_item_description": lambda x: x["toc_item_description"],
+            "toc_item_audience_level": lambda x: x["toc_item_audience_level"],
+        }
+        | prompt
+        | llm
+    )
+
+    result = await chain.ainvoke({
+        "toc_item_title": inputs.toc_item_title,
+        "toc_item_description": inputs.toc_item_description,
+        "toc_item_audience_level": inputs.toc_item_audience_level
+    })
+    return result
+
+# --- End of logic from google-docai.ipynb --- #
