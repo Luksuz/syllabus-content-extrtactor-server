@@ -51,7 +51,7 @@ class ExtractTocInput(BaseModel):
 
 class ToCItem(BaseModel):
     title: str
-    description: str = Field(description="A short description of what the topic covers")
+    description: str = Field(description="A description of the grammar that the topic should cover")
 
 class ExtractToCOutput(BaseModel):
     items: list[ToCItem] = Field(description="List of titles found in the table of contents")
@@ -73,7 +73,8 @@ class GenerateQuestionsInput(BaseModel):
     toc_item_title: str
     toc_item_description: str
     toc_item_audience_level: str
-    model: str = "gpt-4o-mini"
+    syllabus_description: str
+    model: str = "gpt-4.1-mini"
 
 class GenerateQuestionsOutput(BaseModel):
     toc_item_title: str

@@ -97,6 +97,7 @@ async def process_pdf_and_generate_questions_route(
                 toc_item_title=toc_item.title,
                 toc_item_description=toc_item.description,
                 toc_item_audience_level=toc_data.audience_level,
+                syllabus_description=toc_data.description,
                 model=model_name
             )
             # Add the coroutine to the list of tasks

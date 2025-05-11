@@ -113,8 +113,8 @@ async def extract_table_of_contents(inputs: Union[ExtractTocInput, dict]):
                 """You are an expert grammar syllabus analyzer. Your task is to identify and extract the table of contents 
                 from the provided syllabus text, as well as determine the knowledge level or audience this syllabus is intended for.
                 The syllabus may provide a list of topics and exam questions for each topic. 
-                Description should reflect the topic purpose of what grammar student will learn in the topic.
-                Keep in mind that this description is later used to generate practice questions for the student.
+                Each toc item description should reflect the topic purpose of what grammar student will learn in the topic.
+                Keep in mind that this toc item description is later used to generate practice questions for the student.
                 
                 Look for patterns that indicate a table of contents such as:
                 - Numbered or bulleted lists of topics
@@ -167,31 +167,38 @@ async def generate_questions(inputs: Union[GenerateQuestionsInput, dict]):
             (
                 "system",
                 """You are an expert educational content creator. Your task is to generate grammar practice questions based on a topic from a syllabus.
-                description might be about different life situations that the student may encounter. If that is the case, generate grammar questions that are relevant to the topic
-                and the student might have encountered in their life.
+                
+                The topic title might be something like 'Advantages and disadvantages essays: Living abroad', but your focus should be on creating grammar questions 
+                related to the topic, NOT general content questions about the topic itself. These questions are for students to practice grammar for exams.
+                
+                For example, if the topic is about living abroad, create grammar questions that use this context but test grammar concepts like tenses, 
+                conditionals, prepositions, etc. that students would need to master.
+                The concept is mentioned in the syllabus description.
                 
                 Create a diverse set of questions covering the provided topic, including:
                 1. Multiple Choice questions (`multiple_choice`):
-                   - Create a prompt and 4-5 options
+                   - Create a prompt and 4-5 options that test grammar points
                    - Mark exactly one option as correct
                 
                 2. Fill in the Blank questions (`fill_in_blank`):
-                   - Create sentences with blanks to be filled
+                   - Create sentences with blanks to be filled with grammar elements
                    - Provide the correct answer for each blank
                 
                 3. Open Ended questions (`open_ended`):
-                   - Create thought-provoking questions that require explanatory answers
+                   - Create questions that require grammatically correct explanatory answers
+                   - Focus on grammar structures students should practice
                 
-                Ensure the questions are appropriate for the specified audience level and cover the topic thoroughly.
+                Ensure the questions are appropriate for the specified audience level and focus on testing grammar within the topic's context.
                 Generate at least 2 questions of each type (6+ questions total).
                 """
             ),
             (
                 "human",
-                "Topic Title: {toc_item_title}\\nTopic Description: {toc_item_description}\\nAudience Level: {toc_item_audience_level}"
+                "Topic Title: {toc_item_title}\\nTopic Description: {toc_item_description}\\nAudience Level: {toc_item_audience_level}\\nSyllabus Description: {syllabus_description}"
             ),
         ]
     )
+    print(inputs)
 
     llm = ChatOpenAI(
         model=inputs.model,
@@ -203,6 +210,7 @@ async def generate_questions(inputs: Union[GenerateQuestionsInput, dict]):
             "toc_item_title": lambda x: x["toc_item_title"],
             "toc_item_description": lambda x: x["toc_item_description"],
             "toc_item_audience_level": lambda x: x["toc_item_audience_level"],
+            "syllabus_description": lambda x: x["syllabus_description"],
         }
         | prompt
         | llm
@@ -211,7 +219,8 @@ async def generate_questions(inputs: Union[GenerateQuestionsInput, dict]):
     result = await chain.ainvoke({
         "toc_item_title": inputs.toc_item_title,
         "toc_item_description": inputs.toc_item_description,
-        "toc_item_audience_level": inputs.toc_item_audience_level
+        "toc_item_audience_level": inputs.toc_item_audience_level,
+        "syllabus_description": inputs.syllabus_description,
     })
     return result
 
