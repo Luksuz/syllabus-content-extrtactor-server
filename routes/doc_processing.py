@@ -24,9 +24,9 @@ router = APIRouter(prefix="/api")
 
 # --- Environment Variables for Google Cloud Document AI ---
 # These should be set in your server's environment
-GOOGLE_PROJECT_ID = os.getenv("GOOGLE_PROJECT_ID", "sturdy-conduit-444420-c0")
+GOOGLE_PROJECT_ID = os.getenv("GOOGLE_PROJECT_ID", "lukaabu")
 GOOGLE_LOCATION = os.getenv("GOOGLE_LOCATION", "eu") # Format is "us" or "eu"
-GOOGLE_PROCESSOR_ID = os.getenv("GOOGLE_PROCESSOR_ID", "d9300c97699b527a")
+GOOGLE_PROCESSOR_ID = os.getenv("GOOGLE_PROCESSOR_ID", "e74aaa04cf1d9eef")
 # Optional: Override in environment if needed
 GOOGLE_PROCESSOR_VERSION_ID = os.getenv("GOOGLE_PROCESSOR_VERSION_ID", "pretrained-ocr-v2.0-2023-06-02")
 GOOGLE_FIELD_MASK = os.getenv("GOOGLE_FIELD_MASK", "text,entities,pages.pageNumber")
