@@ -110,8 +110,11 @@ async def extract_table_of_contents(inputs: Union[ExtractTocInput, dict]):
         [
             (
                 "system",
-                """You are an expert syllabus analyzer. Your task is to identify and extract the table of contents 
+                """You are an expert grammar syllabus analyzer. Your task is to identify and extract the table of contents 
                 from the provided syllabus text, as well as determine the knowledge level or audience this syllabus is intended for.
+                The syllabus may provide a list of topics and exam questions for each topic. 
+                Description should reflect the topic purpose of what grammar student will learn in the topic.
+                Keep in mind that this description is later used to generate practice questions for the student.
                 
                 Look for patterns that indicate a table of contents such as:
                 - Numbered or bulleted lists of topics
