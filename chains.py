@@ -166,7 +166,9 @@ async def generate_questions(inputs: Union[GenerateQuestionsInput, dict]):
         [
             (
                 "system",
-                """You are an expert educational content creator. Your task is to generate practice questions based on a topic from a syllabus.
+                """You are an expert educational content creator. Your task is to generate grammar practice questions based on a topic from a syllabus.
+                description might be about different life situations that the student may encounter. If that is the case, generate grammar questions that are relevant to the topic
+                and the student might have encountered in their life.
                 
                 Create a diverse set of questions covering the provided topic, including:
                 1. Multiple Choice questions (`multiple_choice`):
